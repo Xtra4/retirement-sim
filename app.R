@@ -194,8 +194,14 @@ server <- function(input, output) {
   
   #Shows the simulation running text
   observeEvent(input$run, {
-    output$status <- renderText("Simulation running, please wait...")
-    run_trigger(TRUE)
+    output$status <- renderText({"Simulation running, please wait..."})
+    
+    invalidateLater(1)
+    
+    
+    later::later(function() {
+      run_trigger(TRUE)
+    }, delay = 0.1)
   })
   
   
