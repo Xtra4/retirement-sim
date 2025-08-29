@@ -6,6 +6,36 @@ library(shinylive)
 
 # implements the ui into a variable
 ui <- fluidPage(
+  # right near your Run button status line
+  textOutput("status"),
+  uiOutput("busy"),   # <- will show/hide the spinner
+  
+  # add this once to your UI (e.g., at the bottom of fluidPage())
+  tags$style(HTML("
+  .lds-dual-ring {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+  .lds-dual-ring:after {
+    content: ' ';
+    display: block;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 3px solid #999;
+    border-color: #999 transparent #999 transparent;
+    animation: lds-dual-ring 1.2s linear infinite;
+  }
+  @keyframes lds-dual-ring {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }")),
+  
+  
+  
   #title
   titlePanel("Retirement Simulation"),
   
@@ -100,7 +130,8 @@ ui <- fluidPage(
                  
                  plotOutput("result_plot4"),
                  plotOutput("result_plot5"),
-                 plotOutput("result_plot6")
+                 plotOutput("result_plot6"),
+                 uiOutput("status_spinner")
         ),
         
         #Spot for capital table
@@ -191,23 +222,45 @@ ui <- fluidPage(
 run_trigger <- reactiveVal(FALSE)
 
 server <- function(input, output, session) {
+  is_running <- reactiveVal(FALSE)
+  
+  output$busy <- renderUI({
+    if (is_running()) {
+      tagList(
+        span("Simulation running..."),
+        div(class = "lds-dual-ring")
+      )
+    } else {
+      NULL
+    }
+  })
+  
   
   # Shows the "running..." message immediately, then kicks off the heavy observer
   observeEvent(input$run, {
+    is_running(TRUE)
     output$status <- renderText("Simulation running, please wait...")
+    shinyjs_disabled <- "disabled"  # no shinyjs; we do it by HTML attribute
+    session$sendCustomMessage("toggleRun", list(disable = TRUE))
     run_trigger(TRUE)
   })
   
+  
+  output$status_spinner <- renderUI({
+    if (is_running()) tags$span(class = "spinner") else NULL
+  })
+  
   observe({
-    req(run_trigger())  # only run when trigger is set
+    req(run_trigger())
     
-    # Always reset when done (or on error) and show "complete!"
     on.exit({
-      run_trigger(FALSE)
+      is_running(FALSE)
       output$status <- renderText("Simulation complete!")
+      session$sendCustomMessage("toggleRun", list(disable = FALSE))
+      run_trigger(FALSE)
     }, add = TRUE)
     
-    withProgress(message = "Simulation running...", value = 0, {
+    # now run your simulation code...
     
     
     t_input <- input$t_input
@@ -883,7 +936,7 @@ server <- function(input, output, session) {
     run_trigger(FALSE)
     
   })
-})
 }
+
 #Puts it all together (ui variable and server variable)
 shinyApp(ui = ui, server = server)
