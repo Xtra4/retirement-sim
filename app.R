@@ -193,6 +193,7 @@ server <- function(input, output) {
   #Shows the simulation running text
   observeEvent(input$run, {
     output$status <- renderText("Simulation running, please wait...")
+    flushReact()
     run_trigger(TRUE)
   })
   
