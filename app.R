@@ -1,8 +1,6 @@
 #the libraries required to run this code
 library(shiny)
 library(DT)
-library(shinylive)
-
 
 # implements the ui into a variable
 ui <- fluidPage(
@@ -203,7 +201,6 @@ server <- function(input, output) {
       run_trigger(TRUE)
     }, delay = 0.1)
   })
-  
   
   
   observe({
