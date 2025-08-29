@@ -1,6 +1,8 @@
 #the libraries required to run this code
 library(shiny)
 library(DT)
+library(shinylive)
+
 
 # implements the ui into a variable
 ui <- fluidPage(
@@ -188,23 +190,25 @@ ui <- fluidPage(
 )  
 run_trigger <- reactiveVal(FALSE)
 
-server <- function(input, output) {
+server <- function(input, output, session) {
   
-  #Shows the simulation running text
+  # Shows the "running..." message immediately, then kicks off the heavy observer
   observeEvent(input$run, {
     output$status <- renderText("Simulation running, please wait...")
-    flushReact()
     run_trigger(TRUE)
   })
   
-  
   observe({
+    req(run_trigger())  # only run when trigger is set
     
-    #requires to press the button to do the logic
-    req(run_trigger())
-    req(input$run)
+    # Always reset when done (or on error) and show "complete!"
+    on.exit({
+      run_trigger(FALSE)
+      output$status <- renderText("Simulation complete!")
+    }, add = TRUE)
     
-    run_trigger(FALSE)
+    withProgress(message = "Simulation running...", value = 0, {
+    
     
     t_input <- input$t_input
     valid_1 <- TRUE
@@ -240,7 +244,7 @@ server <- function(input, output) {
       if (is.null(range)) {
         return(FALSE)
       }
-
+      
       if (active) {
         if (range[2] > t_input) {
           showModal(modalDialog(
@@ -250,7 +254,7 @@ server <- function(input, output) {
           ))
           return(FALSE)
         }
-      return(TRUE)
+        return(TRUE)
       }
     }
     
@@ -275,13 +279,13 @@ server <- function(input, output) {
     
     #checks if all cashflow checks were ok
     valid_3 <- check_error(input$cashflow_1, input$rangeinput_1) && 
-               check_error(input$cashflow_2, input$rangeinput_2) &&
-               check_error(input$cashflow_3, input$rangeinput_3)
+      check_error(input$cashflow_2, input$rangeinput_2) &&
+      check_error(input$cashflow_3, input$rangeinput_3)
     
     #Checks if all checks were ok
     valid <- valid_1 && valid_2 && valid_3
-      
-      
+    
+    
     
     #Checks if valid is false (from checks earlier) then proceeds if it is true
     if (valid == F){
@@ -461,6 +465,8 @@ server <- function(input, output) {
     lngthLow <- length(lowPoS)
     lngthUp <- length(upPoS)
     
+    total_steps <- max(1, trials)
+    
     # Loops through each trial (trials from the input)
     for (i in 1:trials) {
       #Gets the percent run for the portfolio
@@ -468,7 +474,7 @@ server <- function(input, output) {
       
       #Resets the capital
       new_capital <- (capital_input - initial_input + total_cashflow[1]) * (1 + percent_run[1])
-
+      
       #puts in the cashflow
       cashflow_table[1,i] <- total_cashflow[1]
       
@@ -498,6 +504,10 @@ server <- function(input, output) {
       
       timebelowinitial_year_table[1,i] = timebelowinitial_year
       timefloor_year_table[1,i] = timefloor_year
+      
+      if (i %% max(1, floor(trials/100)) == 0) {
+        incProgress(1/total_steps, detail = paste("Trial", i, "of", trials))
+      }
       
       for (x in 2:t_input) {
         #Resets it
@@ -873,7 +883,7 @@ server <- function(input, output) {
     run_trigger(FALSE)
     
   })
+})
 }
-
 #Puts it all together (ui variable and server variable)
 shinyApp(ui = ui, server = server)
