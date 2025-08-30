@@ -1,13 +1,11 @@
 name: Deploy Shiny app
-
 on:
   push:
-    branches: [ "main" ]   # trigger deploys on main branch pushes
+    branches: [ "main" ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -21,22 +19,38 @@ jobs:
           extra-packages: any::rsconnect
           needs: rsconnect
 
+      # Print only lengths/shape (never the secrets)
+      - name: Sanity-check env (safe)
+        env:
+          SHINYAPPS_ACCOUNT: ${{ secrets.SHINYAPPS_ACCOUNT }}
+          SHINYAPPS_TOKEN:   ${{ secrets.SHINYAPPS_TOKEN }}
+          SHINYAPPS_SECRET:  ${{ secrets.SHINYAPPS_SECRET }}
+        run: |
+          echo "Account: '$SHINYAPPS_ACCOUNT'"
+          echo "Token length: ${#SHINYAPPS_TOKEN}"
+          echo "Secret length: ${#SHINYAPPS_SECRET}"
+
       - name: Configure rsconnect
         env:
-          SHINYAPPS_ACCOUNT: ${{ secrets.MY_ACCOUNT }}
-          SHINYAPPS_TOKEN:   ${{ secrets.MY_TOKEN }}
-          SHINYAPPS_SECRET:  ${{ secrets.MY_SECRET }}
+          SHINYAPPS_ACCOUNT: ${{ secrets.SHINYAPPS_ACCOUNT }}
+          SHINYAPPS_TOKEN:   ${{ secrets.SHINYAPPS_TOKEN }}
+          SHINYAPPS_SECRET:  ${{ secrets.SHINYAPPS_SECRET }}
         run: |
-          R -q -e 'library(rsconnect);
-                   rsconnect::setAccountInfo(
-                     name   = Sys.getenv("SHINYAPPS_ACCOUNT"),
-                     token  = Sys.getenv("SHINYAPPS_TOKEN"),
-                     secret = Sys.getenv("SHINYAPPS_SECRET"),
-                     server = "shinyapps.io"
-                   )'
-          R -q -e 'rsconnect::accountInfo()'   # sanity check
+          R -q -e 'library(rsconnect)
+                   acct <- Sys.getenv("SHINYAPPS_ACCOUNT")
+                   tok  <- Sys.getenv("SHINYAPPS_TOKEN")
+                   sec  <- Sys.getenv("SHINYAPPS_SECRET")
+                   stopifnot(nzchar(acct), nzchar(tok), nzchar(sec))
+                   if (!grepl("^[A-Za-z0-9._-]+$", acct)) stop("Account name has invalid characters")
+                   if (nchar(tok)  < 30) stop("Token looks too short")
+                   if (nchar(sec)  < 30) stop("Secret looks too short")
+                   rsconnect::setAccountInfo(name=acct, token=tok, secret=sec, server="shinyapps.io")
+                   print(rsconnect::accounts())  # must succeed'
 
       - name: Deploy to shinyapps.io
+        env:
+          SHINYAPPS_ACCOUNT: ${{ secrets.SHINYAPPS_ACCOUNT }}
         run: |
-          R -q -e 'library(rsconnect);
-                   rsconnect::deployApp(appDir=".", forceUpdate=TRUE)'
+          R -q -e 'library(rsconnect)
+                   rsconnect::deployApp(appDir=".", forceUpdate=TRUE,
+                     account=Sys.getenv("SHINYAPPS_ACCOUNT"))'
