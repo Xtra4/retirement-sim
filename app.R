@@ -235,6 +235,15 @@ server <- function(input, output) {
       ))
       valid_2 <- FALSE
     }
+
+    if (2 > 1) {
+      showModal(modalDialog(
+        title = "Processing",
+        "The simulation is processing, please wait until it is completed. Thank you.",
+        easyClose = TRUE
+      ))
+    }
+
     
     #cashflow check
     check_error <- function(active, range) {
@@ -286,13 +295,7 @@ server <- function(input, output) {
     #Checks if all checks were ok
     valid <- valid_1 && valid_2 && valid_3
     
-    if (T == T) {
-      showModal(modalDialog(
-        title = "Processing",
-        "The simulation is processing, please wait until it is completed. Thank you.",
-        easyClose = TRUE
-      ))
-    }
+    
     
     #Combines cashflow into a list
     apply_cashflow <- function(active, range, amount, inflation_adjusted, t_input, inflation_rate) {
