@@ -2,7 +2,7 @@ name: Deploy Shiny app
 
 on:
   push:
-    branches: [ "main" ]   # change if you deploy from another branch
+    branches: [ "main" ]
 
 jobs:
   deploy:
@@ -15,29 +15,27 @@ jobs:
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
 
-      # Optional, but helps some packages
-      - name: Set up pandoc
-        uses: r-lib/actions/setup-pandoc@v2
-
-      # Install rsconnect using pak (fast & robust)
       - name: Install rsconnect
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::rsconnect
           needs: rsconnect
 
-      # If you prefer base R instead of the step above, comment the step above
-      # and uncomment this step:
-      # - name: Install rsconnect (base R)
-      #   run: R -q -e 'install.packages("rsconnect", repos="https://packagemanager.posit.co/cran/__linux__/jammy/latest")'
-
-      - name: Deploy to shinyapps.io
+      - name: Configure rsconnect (setAccountInfo)
         env:
           SHINYAPPS_ACCOUNT: ${{ secrets.SHINYAPPS_ACCOUNT }}
           SHINYAPPS_TOKEN:   ${{ secrets.SHINYAPPS_TOKEN }}
           SHINYAPPS_SECRET:  ${{ secrets.SHINYAPPS_SECRET }}
         run: |
-          R -q -e 'library(rsconnect); rsconnect::setAccountInfo(Sys.getenv("SHINYAPPS_ACCOUNT"),
-                                                                Sys.getenv("SHINYAPPS_TOKEN"),
-                                                                Sys.getenv("SHINYAPPS_SECRET"))'
+          R -q -e 'library(rsconnect); rsconnect::setAccountInfo(
+                     name   = Sys.getenv("SHINYAPPS_ACCOUNT"),
+                     token  = Sys.getenv("SHINYAPPS_TOKEN"),
+                     secret = Sys.getenv("SHINYAPPS_SECRET"),
+                     server = "shinyapps.io"
+                   )'
+          # sanity check: should show your account, not error
+          R -q -e 'library(rsconnect); print(rsconnect::accountInfo())'
+
+      - name: Deploy to shinyapps.io
+        run: |
           R -q -e 'library(rsconnect); rsconnect::deployApp(appDir=".", forceUpdate=TRUE)'
