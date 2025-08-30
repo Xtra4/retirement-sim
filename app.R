@@ -282,9 +282,6 @@ server <- function(input, output) {
     
     
     #Checks if valid is false (from checks earlier) then proceeds if it is true
-    if (valid == F){
-      return()
-    }
     
     #Combines cashflow into a list
     apply_cashflow <- function(active, range, amount, inflation_adjusted, t_input, inflation_rate) {
