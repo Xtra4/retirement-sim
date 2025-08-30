@@ -1,8 +1,9 @@
 #the libraries required to run this code
 library(shiny)
 library(DT)
+rsconnect::deployApp()
 
-idk <- FALSE
+
 # implements the ui into a variable
 ui <- fluidPage(
   #title
