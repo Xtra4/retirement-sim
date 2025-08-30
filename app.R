@@ -1,7 +1,7 @@
 #the libraries required to run this code
 library(shiny)
 library(DT)
-
+library(rsconnect)
 
 # implements the ui into a variable
 ui <- fluidPage(
