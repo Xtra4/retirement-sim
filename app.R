@@ -286,13 +286,6 @@ server <- function(input, output) {
     #Checks if all checks were ok
     valid <- valid_1 && valid_2 && valid_3
     
-    
-    
-    #Checks if valid is false (from checks earlier) then proceeds if it is true
-    if (valid == F){
-      return()
-    }
-    
     if (T == T) {
       showModal(modalDialog(
         title = "Processing",
