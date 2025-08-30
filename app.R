@@ -2,6 +2,7 @@
 library(shiny)
 library(DT)
 
+idk <- FALSE
 # implements the ui into a variable
 ui <- fluidPage(
   #title
@@ -242,6 +243,7 @@ server <- function(input, output) {
         "The simulation is processing, please wait until it is completed. Thank you.",
         easyClose = TRUE
       ))
+      idk <- TRUE
     }
 
     
@@ -260,7 +262,7 @@ server <- function(input, output) {
           showModal(modalDialog(
             title = "Input Error",
             "Range of Years Must Be Within the simulation years input.",
-            easyClose = T
+            easyClose = TRUE
           ))
           return(FALSE)
         }
