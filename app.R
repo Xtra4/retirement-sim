@@ -2,13 +2,13 @@
 library(shiny)
 library(DT)
 rsconnect::deployApp()
-
+rsconnect::deployApp(".")
 
 # implements the ui into a variable
 ui <- fluidPage(
   #title
   titlePanel("Retirement Simulation"),
-  
+  h6("Build: 2025-08-30")
   #All the inputs
   sidebarLayout(
     sidebarPanel(
