@@ -1,7 +1,6 @@
 #the libraries required to run this code
 library(shiny)
 library(DT)
-rsconnect::deployApp()
 rsconnect::deployApp(".")
 
 # implements the ui into a variable
