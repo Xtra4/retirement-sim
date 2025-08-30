@@ -1,13 +1,14 @@
 #the libraries required to run this code
 library(shiny)
 library(DT)
-rsconnect::deployApp(".")
+rsconnect::deployApp()
 
 # implements the ui into a variable
 ui <- fluidPage(
   #title
   titlePanel("Retirement Simulation"),
-  h6("Build: 2025-08-30")
+  h6("Build: 1"),
+  
   #All the inputs
   sidebarLayout(
     sidebarPanel(
@@ -193,17 +194,15 @@ server <- function(input, output) {
   
   #Shows the simulation running text
   observeEvent(input$run, {
-
-  #Need to make changes here
-
-
-
-
-
-
-
+    output$status <- renderText({"Simulation running, please wait..."})
     
-  
+    invalidateLater(1)
+    
+    
+    later::later(function() {
+      run_trigger(TRUE)
+    }, delay = 0.1)
+  })
   
   observe({
     
@@ -217,7 +216,33 @@ server <- function(input, output) {
     valid_1 <- TRUE
     valid_2 <- TRUE
     valid_3 <- TRUE
-
+    
+    #Gives Error if inputs are not correct
+    if (input$initial_percent < input$floor_percent) {
+      output$status <- renderText({"Please try again."})
+      showModal(modalDialog(
+        title = "Input Error",
+        "Initial Withdrawal Rate must be greater than or equal to the Floor Withdrawal Rate.",
+        easyClose = TRUE
+      ))
+      valid_1 <- FALSE
+    }
+    
+    #POS check
+    if (as.numeric(input$lowPoS_input) >= as.numeric(input$upPoS_input)) {
+      output$status <- renderText({"Please try again."})
+      showModal(modalDialog(
+        title = "Input Error",
+        "Lower Probability Threshold must be less than the Upper Probability Threshold.",
+        easyClose = TRUE
+      ))
+      valid_2 <- FALSE
+    }
+    
+    
+    
+    
+    
     
     #cashflow check
     check_error <- function(active, range) {
@@ -231,6 +256,7 @@ server <- function(input, output) {
       
       if (active) {
         if (range[2] > t_input) {
+          output$status <- renderText({"Please try again."})
           showModal(modalDialog(
             title = "Input Error",
             "Range of Years Must Be Within the simulation years input.",
@@ -269,7 +295,17 @@ server <- function(input, output) {
     #Checks if all checks were ok
     valid <- valid_1 && valid_2 && valid_3
     
+    if (valid == FALSE) {
+      return()
+    }
     
+    
+    
+    showModal(modalDialog(
+      title = "Processing",
+      "The simulation is processing, please wait until it is completed. Thank you.",
+      easyClose = TRUE
+    ))
     
     #Combines cashflow into a list
     apply_cashflow <- function(active, range, amount, inflation_adjusted, t_input, inflation_rate) {
