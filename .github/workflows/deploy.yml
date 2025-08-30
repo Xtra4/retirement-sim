@@ -2,7 +2,7 @@ name: Deploy Shiny app
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main" ]   # trigger deploys on main branch pushes
 
 jobs:
   deploy:
@@ -21,21 +21,22 @@ jobs:
           extra-packages: any::rsconnect
           needs: rsconnect
 
-      - name: Configure rsconnect (setAccountInfo)
+      - name: Configure rsconnect
         env:
-          SHINYAPPS_ACCOUNT: ${{ secrets.SHINYAPPS_ACCOUNT }}
-          SHINYAPPS_TOKEN:   ${{ secrets.SHINYAPPS_TOKEN }}
-          SHINYAPPS_SECRET:  ${{ secrets.SHINYAPPS_SECRET }}
+          SHINYAPPS_ACCOUNT: ${{ secrets.MY_ACCOUNT }}
+          SHINYAPPS_TOKEN:   ${{ secrets.MY_TOKEN }}
+          SHINYAPPS_SECRET:  ${{ secrets.MY_SECRET }}
         run: |
-          R -q -e 'library(rsconnect); rsconnect::setAccountInfo(
+          R -q -e 'library(rsconnect);
+                   rsconnect::setAccountInfo(
                      name   = Sys.getenv("SHINYAPPS_ACCOUNT"),
                      token  = Sys.getenv("SHINYAPPS_TOKEN"),
                      secret = Sys.getenv("SHINYAPPS_SECRET"),
                      server = "shinyapps.io"
                    )'
-          # sanity check: should show your account, not error
-          R -q -e 'library(rsconnect); print(rsconnect::accountInfo())'
+          R -q -e 'rsconnect::accountInfo()'   # sanity check
 
       - name: Deploy to shinyapps.io
         run: |
-          R -q -e 'library(rsconnect); rsconnect::deployApp(appDir=".", forceUpdate=TRUE)'
+          R -q -e 'library(rsconnect);
+                   rsconnect::deployApp(appDir=".", forceUpdate=TRUE)'
