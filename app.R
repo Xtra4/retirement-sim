@@ -193,15 +193,44 @@ server <- function(input, output) {
   
   #Shows the simulation running text
   observeEvent(input$run, {
-    output$status <- renderText({"Simulation running, please wait..."})
-    
-    invalidateLater(1)
-    
-    
-    later::later(function() {
-      run_trigger(TRUE)
-    }, delay = 0.1)
-  })
+  # --- VALIDATIONS FIRST (no "processing" UI yet) ---
+  errs <- character(0)
+  if (input$initial_percent < input$floor_percent) {
+    errs <- c(errs, "Initial Withdrawal Rate must be ≥ Floor Withdrawal Rate.")
+  }
+  if (as.numeric(input$lowPoS_input) >= as.numeric(input$upPoS_input)) {
+    errs <- c(errs, "Lower Probability Threshold must be < Upper Probability Threshold.")
+  }
+  # cashflow ranges within t_input?
+  t_input <- input$t_input
+  check_range <- function(active, rng) active && (!length(rng) || is.null(rng) || rng[2] > t_input)
+  if (check_range(input$cashflow_1, input$rangeinput_1) ||
+      check_range(input$cashflow_2, input$rangeinput_2) ||
+      check_range(input$cashflow_3, input$rangeinput_3)) {
+    errs <- c(errs, "Cashflow year range must be within the simulation years.")
+  }
+
+  if (length(errs)) {
+    showModal(modalDialog(title = "Input Error",
+                          paste(errs, collapse = "<br/>"),
+                          easyClose = TRUE))
+    output$status <- renderText({"Fix the inputs above and try again."})
+    return(invisible(NULL))  # <-- STOP: no processing popup
+  }
+
+  # --- If we got here, inputs are valid: show "running" UI and the processing modal ---
+  output$status <- renderText({"Simulation running, please wait..."})
+  showModal(modalDialog(
+    title = "Processing",
+    "The simulation is processing, please wait until it is completed. Thank you.",
+    easyClose = TRUE
+  ))
+
+  # Start the heavy work only after the browser has flushed the UI:
+  session$onFlushed(function() {
+    run_trigger(TRUE)
+  }, once = TRUE)
+})
   
   
   observe({
@@ -216,35 +245,6 @@ server <- function(input, output) {
     valid_1 <- TRUE
     valid_2 <- TRUE
     valid_3 <- TRUE
-    
-    #Gives Error if inputs are not correct
-    if (input$initial_percent < input$floor_percent) {
-      showModal(modalDialog(
-        title = "Input Error",
-        "Initial Withdrawal Rate must be greater than or equal to the Floor Withdrawal Rate.",
-        easyClose = TRUE
-      ))
-      valid_1 <- FALSE
-    }
-    
-    #POS check
-    if (as.numeric(input$lowPoS_input) >= as.numeric(input$upPoS_input)) {
-      showModal(modalDialog(
-        title = "Input Error",
-        "Lower Probability Threshold must be less than the Upper Probability Threshold.",
-        easyClose = TRUE
-      ))
-      valid_2 <- FALSE
-    }
-
-    if (2 > 1) {
-      showModal(modalDialog(
-        title = "Processing",
-        "The simulation is processing, please wait until it is completed. Thank you.",
-        easyClose = TRUE
-      ))
-      idk <- TRUE
-    }
 
     
     #cashflow check
