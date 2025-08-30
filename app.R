@@ -293,13 +293,13 @@ server <- function(input, output) {
       return()
     }
     
-    
-    showModal(modalDialog(
-      title = "Processing",
-      "The simulation is processing, please wait until it is completed. Thank you.",
-      easyClose = TRUE
-    ))
-    
+    if (T == T) {
+      showModal(modalDialog(
+        title = "Processing",
+        "The simulation is processing, please wait until it is completed. Thank you.",
+        easyClose = TRUE
+      ))
+    }
     
     #Combines cashflow into a list
     apply_cashflow <- function(active, range, amount, inflation_adjusted, t_input, inflation_rate) {
