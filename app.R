@@ -193,6 +193,13 @@ server <- function(input, output) {
   #Shows the simulation running text
   observeEvent(input$run, {
     output$status <- renderText({"Simulation running, please wait..."})
+    
+    invalidateLater(1)
+    
+    
+    later::later(function() {
+      run_trigger(TRUE)
+    }, delay = 0.1)
   })
   
   
@@ -282,6 +289,17 @@ server <- function(input, output) {
     
     
     #Checks if valid is false (from checks earlier) then proceeds if it is true
+    if (valid == F){
+      return()
+    }
+    
+    
+    showModal(modalDialog(
+      title = "Processing",
+      "The simulation is processing, please wait until it is completed. Thank you.",
+      easyClose = TRUE
+    ))
+    
     
     #Combines cashflow into a list
     apply_cashflow <- function(active, range, amount, inflation_adjusted, t_input, inflation_rate) {
